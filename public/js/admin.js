@@ -25,6 +25,39 @@ function extractDate(completedAt) {
   return match ? match[1] : "Unknown Date";
 }
 
+function firebaseDateToText(value) {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (value && typeof value.toDate === "function") {
+    const date = value.toDate();
+    const iso = date.toISOString();
+    return `${iso.slice(0, 10)} ${iso.slice(11, 19)}`;
+  }
+  return String(value);
+}
+
+async function loadEntriesFromFirebase(query = "") {
+  if (!window.db || !window.firebaseGet || !window.firebaseCollection) {
+    return null;
+  }
+  const snapshot = await window.firebaseGet(window.firebaseCollection(window.db, "results"));
+  const entries = [];
+  snapshot.forEach((doc) => {
+    const data = doc.data() || {};
+    entries.push({
+      studentName: data.studentName || data.name || "",
+      studentEmail: data.studentEmail || "",
+      studentSection: data.studentSection || "",
+      score: Number(data.score || 0),
+      answers: Array.isArray(data.answers) ? data.answers : [],
+      completedAt: data.completedAt || firebaseDateToText(data.timestamp)
+    });
+  });
+  const q = String(query || "").toLowerCase().trim();
+  if (!q) return entries;
+  return entries.filter((r) => String(r.studentName || "").toLowerCase().includes(q));
+}
+
 async function downloadCsvForDate(date) {
   const endpoint =
     date && date !== "Unknown Date"
@@ -115,6 +148,16 @@ async function loadEntries(query = "") {
   if (!loggedIn) {
     return;
   }
+  try {
+    const firebaseEntries = await loadEntriesFromFirebase(query);
+    if (firebaseEntries) {
+      renderEntries(firebaseEntries);
+      return;
+    }
+  } catch (_error) {
+    // Fall through to existing API mode if Firebase fails.
+  }
+
   const url = query ? `/api/results?q=${encodeURIComponent(query)}` : "/api/results";
   let response;
   try {

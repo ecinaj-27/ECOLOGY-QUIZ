@@ -161,6 +161,22 @@ function buildAnswersFromSelections() {
   });
 }
 
+async function saveResultToFirebase({ studentName, studentEmail, studentSection, score, answers, completedAt }) {
+  if (!window.db || !window.firebaseAdd || !window.firebaseCollection) {
+    return false;
+  }
+  await window.firebaseAdd(window.firebaseCollection(window.db, "results"), {
+    studentName,
+    studentEmail,
+    studentSection,
+    score,
+    answers,
+    completedAt,
+    timestamp: new Date()
+  });
+  return true;
+}
+
 function renderSummary() {
   buildAnswersFromSelections();
   summaryBreakdown.innerHTML = `
@@ -233,6 +249,19 @@ async function finishQuiz() {
       </tbody>
     </table>
   `;
+
+  try {
+    await saveResultToFirebase({
+      studentName,
+      studentEmail,
+      studentSection,
+      score,
+      answers,
+      completedAt
+    });
+  } catch (err) {
+    console.error("Failed to save result to Firebase:", err);
+  }
 
   try {
     await fetch("/api/results", {
