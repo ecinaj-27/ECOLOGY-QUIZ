@@ -70,7 +70,7 @@ function renderEntries(entries) {
             <article class="admin-card">
               <h3>${entry.studentName} - ${entry.score}/10</h3>
               <p>Email: ${entry.studentEmail || "-"}</p>
-              <p>Section: ${entry.studentSection || "-"}</p>
+              <p>Block and Section: ${entry.studentSection || "-"}</p>
               <p>Completed: ${entry.completedAt}</p>
               <table class="result-table">
                 <thead>

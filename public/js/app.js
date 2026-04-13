@@ -40,6 +40,7 @@ const fallbackVideo = "/assets/videos/Habitats_ Rainforests [CLIP].mp4";
 
 const entryScreen = document.getElementById("entry-screen");
 const quizScreen = document.getElementById("quiz-screen");
+const summaryScreen = document.getElementById("summary-screen");
 const resultScreen = document.getElementById("result-screen");
 const nameInput = document.getElementById("name-input");
 const emailInput = document.getElementById("email-input");
@@ -53,6 +54,11 @@ const resultScore = document.getElementById("result-score");
 const resultBreakdown = document.getElementById("result-breakdown");
 const restartBtn = document.getElementById("restart-btn");
 const studentNameLabel = document.getElementById("student-name-label");
+const backBtn = document.getElementById("back-btn");
+const nextBtn = document.getElementById("next-btn");
+const summaryBreakdown = document.getElementById("summary-breakdown");
+const summaryBackBtn = document.getElementById("summary-back-btn");
+const submitBtn = document.getElementById("submit-btn");
 const bgVideo = document.getElementById("bg-video");
 const bgAudio = document.getElementById("bg-audio");
 
@@ -60,6 +66,7 @@ let currentIndex = 0;
 let studentName = "";
 let studentEmail = "";
 let studentSection = "";
+let selectedAnswers = [];
 let answers = [];
 
 function letterFor(index) {
@@ -67,8 +74,14 @@ function letterFor(index) {
 }
 
 function switchScreen(show) {
-  [entryScreen, quizScreen, resultScreen].forEach((el) => el.classList.add("hidden"));
+  [entryScreen, quizScreen, summaryScreen, resultScreen].forEach((el) => el.classList.add("hidden"));
   show.classList.remove("hidden");
+}
+
+function normalizeVideoPath(path) {
+  if (!path) return fallbackVideo;
+  if (path.startsWith("/")) return path;
+  return `/${path.replace(/\\/g, "/")}`;
 }
 
 function renderQuestion() {
@@ -81,7 +94,7 @@ function renderQuestion() {
     bgVideo.load();
     bgVideo.play().catch(() => {});
   };
-  bgVideo.src = item.video;
+  bgVideo.src = normalizeVideoPath(item.video);
   bgVideo.load();
   bgVideo.play().catch(() => {});
 
@@ -89,38 +102,91 @@ function renderQuestion() {
   item.choices.forEach((choice, idx) => {
     const letter = letterFor(idx);
     const button = document.createElement("button");
+    button.type = "button";
     button.textContent = `${letter}. ${choice}`;
-    button.addEventListener("click", () => submitAnswer(letter));
+    if (selectedAnswers[currentIndex] === letter) {
+      button.classList.add("selected-choice");
+    }
+    button.addEventListener("click", () => {
+      selectedAnswers[currentIndex] = letter;
+      renderQuestion();
+    });
     choicesEl.appendChild(button);
   });
-
+  backBtn.disabled = currentIndex === 0;
+  nextBtn.textContent = currentIndex === questions.length - 1 ? "Review Answers" : "Next";
 }
 
-function submitAnswer(selected) {
-  const item = questions[currentIndex];
-  const isCorrect = selected === item.correct;
-  answers.push({
-    question: currentIndex + 1,
-    selected,
-    correct: item.correct,
-    result: selected === "No Answer" ? "No Answer" : isCorrect ? "Correct" : "Incorrect"
-  });
-
-  currentIndex += 1;
-  if (currentIndex >= questions.length) {
-    finishQuiz();
-    return;
-  }
+function goBackQuestion() {
+  if (currentIndex === 0) return;
+  currentIndex -= 1;
   renderQuestion();
 }
 
+function goNextQuestion() {
+  if (!selectedAnswers[currentIndex]) {
+    selectedAnswers[currentIndex] = "No Answer";
+  }
+  if (currentIndex === questions.length - 1) {
+    renderSummary();
+    switchScreen(summaryScreen);
+    return;
+  }
+  currentIndex += 1;
+  renderQuestion();
+}
+
+function buildAnswersFromSelections() {
+  answers = questions.map((item, index) => {
+    const selected = selectedAnswers[index] || "No Answer";
+    const isCorrect = selected === item.correct;
+    return {
+      question: index + 1,
+      selected,
+      correct: item.correct,
+      result: selected === "No Answer" ? "No Answer" : isCorrect ? "Correct" : "Incorrect"
+    };
+  });
+}
+
+function renderSummary() {
+  buildAnswersFromSelections();
+  summaryBreakdown.innerHTML = `
+    <table class="result-table">
+      <thead>
+        <tr>
+          <th>Question</th>
+          <th>Selected</th>
+          <th>Correct</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${answers
+          .map(
+            (a) => `
+          <tr>
+            <td>${a.question}</td>
+            <td>${a.selected}</td>
+            <td>${a.correct}</td>
+            <td>${a.result}</td>
+          </tr>
+        `
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
+}
+
 async function finishQuiz() {
+  buildAnswersFromSelections();
   const score = answers.filter((a) => a.result === "Correct").length * 2;
   const maxScore = questions.length * 2;
   const completedAt = new Date().toISOString().replace("T", " ").slice(0, 19);
 
   switchScreen(resultScreen);
-  resultStudent.textContent = `Student: ${studentName} | Email: ${studentEmail} | Section: ${studentSection}`;
+  resultStudent.textContent = `Student: ${studentName} | Email: ${studentEmail} | Block and Section: ${studentSection}`;
   resultScore.textContent = `Score: ${score}/${maxScore}`;
 
   resultBreakdown.innerHTML = `
@@ -194,6 +260,7 @@ function startQuiz() {
   sessionStorage.setItem("quizStudentIdentifier", studentName);
   studentNameLabel.textContent = `Student: ${studentName}`;
   currentIndex = 0;
+  selectedAnswers = new Array(questions.length).fill(null);
   answers = [];
 
   switchScreen(quizScreen);
@@ -210,6 +277,7 @@ function resetQuiz() {
   studentName = "";
   studentEmail = "";
   studentSection = "";
+  selectedAnswers = [];
   answers = [];
   currentIndex = 0;
   switchScreen(entryScreen);
@@ -217,6 +285,14 @@ function resetQuiz() {
 
 startBtn.addEventListener("click", startQuiz);
 restartBtn.addEventListener("click", resetQuiz);
+backBtn.addEventListener("click", goBackQuestion);
+nextBtn.addEventListener("click", goNextQuestion);
+summaryBackBtn.addEventListener("click", () => {
+  currentIndex = questions.length - 1;
+  switchScreen(quizScreen);
+  renderQuestion();
+});
+submitBtn.addEventListener("click", finishQuiz);
 sectionInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     startQuiz();
