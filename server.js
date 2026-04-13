@@ -122,7 +122,9 @@ app.post("/api/results", (req, res) => {
 
 app.post("/api/admin/login", (req, res) => {
   const { username, password } = req.body || {};
-  const ok = username === TEACHER_USER && password === TEACHER_PASS;
+  const normalizedUser = String(username || "").trim().toLowerCase();
+  const allowedUsers = [TEACHER_USER, "admin"];
+  const ok = allowedUsers.includes(normalizedUser) && password === TEACHER_PASS;
   return res.json({ ok });
 });
 
