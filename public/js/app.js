@@ -167,19 +167,29 @@ function renderSummary() {
     <table class="result-table">
       <thead>
         <tr>
+          <th>No.</th>
           <th>Question</th>
-          <th>Selected</th>
+          <th>Selected Answer</th>
         </tr>
       </thead>
       <tbody>
         ${answers
           .map(
-            (a) => `
+            (a) => {
+              const item = questions[a.question - 1];
+              const selectedIndex = a.selected === "No Answer" ? -1 : a.selected.charCodeAt(0) - 65;
+              const selectedChoice =
+                selectedIndex >= 0 && item && item.choices[selectedIndex]
+                  ? `${a.selected}. ${item.choices[selectedIndex]}`
+                  : "No Answer";
+              return `
           <tr>
             <td>${a.question}</td>
-            <td>${a.selected}</td>
+            <td>${item ? item.question : ""}</td>
+            <td>${selectedChoice}</td>
           </tr>
         `
+            }
           )
           .join("")}
       </tbody>
