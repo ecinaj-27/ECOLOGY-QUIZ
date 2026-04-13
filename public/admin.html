@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quiz Admin</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <main class="admin-wrapper">
+      <section id="admin-login" class="panel admin-panel">
+        <h1>Teacher Dashboard</h1>
+        <p>Sign in to view quiz submissions.</p>
+        <input id="admin-user" type="text" placeholder="Username" />
+        <input id="admin-pass" type="password" placeholder="Password" />
+        <button id="admin-login-btn">Login</button>
+        <p id="admin-login-error" class="error-text"></p>
+      </section>
+
+      <section id="admin-dashboard" class="panel admin-panel hidden">
+        <div class="admin-head">
+          <h2>Student Results</h2>
+          <button id="export-btn">Export All Results</button>
+        </div>
+        <input
+          id="search-input"
+          type="text"
+          placeholder="Search by name or student number"
+        />
+        <div id="admin-list"></div>
+      </section>
+    </main>
+    <script src="/js/admin.js"></script>
+  </body>
+</html>

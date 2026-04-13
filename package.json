@@ -1,0 +1,12 @@
+{
+  "name": "web-quiz-game",
+  "version": "1.0.0",
+  "description": "Web quiz game with student and admin views",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
