@@ -68,6 +68,7 @@ let studentEmail = "";
 let studentSection = "";
 let selectedAnswers = [];
 let answers = [];
+let currentVideoSrc = "";
 
 function letterFor(index) {
   return String.fromCharCode(65 + index);
@@ -84,19 +85,30 @@ function normalizeVideoPath(path) {
   return `/${path.replace(/\\/g, "/")}`;
 }
 
-function renderQuestion() {
-  const item = questions[currentIndex];
-  questionTitle.textContent = item.question;
-  questionIndexEl.textContent = `Question ${currentIndex + 1} of ${questions.length}`;
+function updateBackgroundVideo(videoPath) {
+  const nextVideoSrc = normalizeVideoPath(videoPath);
+  if (nextVideoSrc === currentVideoSrc) return;
+
   bgVideo.onerror = () => {
     if (bgVideo.src.includes(fallbackVideo)) return;
     bgVideo.src = fallbackVideo;
+    currentVideoSrc = fallbackVideo;
     bgVideo.load();
     bgVideo.play().catch(() => {});
   };
-  bgVideo.src = normalizeVideoPath(item.video);
+  bgVideo.src = nextVideoSrc;
+  currentVideoSrc = nextVideoSrc;
   bgVideo.load();
   bgVideo.play().catch(() => {});
+}
+
+function renderQuestion(shouldUpdateVideo = true) {
+  const item = questions[currentIndex];
+  questionTitle.textContent = item.question;
+  questionIndexEl.textContent = `Question ${currentIndex + 1} of ${questions.length}`;
+  if (shouldUpdateVideo) {
+    updateBackgroundVideo(item.video);
+  }
 
   choicesEl.innerHTML = "";
   item.choices.forEach((choice, idx) => {
@@ -109,7 +121,7 @@ function renderQuestion() {
     }
     button.addEventListener("click", () => {
       selectedAnswers[currentIndex] = letter;
-      renderQuestion();
+      renderQuestion(false);
     });
     choicesEl.appendChild(button);
   });
