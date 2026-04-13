@@ -124,24 +124,39 @@ async function login() {
   loginError.textContent = "";
   const username = userInput.value.trim();
   const password = passInput.value.trim();
-
-  const response = await fetch("/api/admin/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
-  });
-  const data = await response.json();
-  if (!data.ok) {
-    loginError.textContent = "Invalid username or password.";
+  if (!username || !password) {
+    loginError.textContent = "Please enter username and password.";
     return;
   }
-  loggedIn = true;
-  loginSection.classList.add("hidden");
-  dashboardSection.classList.remove("hidden");
-  loadEntries();
+
+  try {
+    const response = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+    if (!response.ok) {
+      loginError.textContent = "Login request failed. Please try again.";
+      return;
+    }
+    const data = await response.json();
+    if (!data.ok) {
+      loginError.textContent = "Invalid username or password.";
+      return;
+    }
+    loggedIn = true;
+    loginSection.classList.add("hidden");
+    dashboardSection.classList.remove("hidden");
+    loadEntries();
+  } catch (_error) {
+    loginError.textContent = "Cannot reach server. Open the quiz using http://localhost:3000.";
+  }
 }
 
 loginBtn.addEventListener("click", login);
+userInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") login();
+});
 passInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") login();
 });

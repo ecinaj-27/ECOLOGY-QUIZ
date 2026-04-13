@@ -169,7 +169,6 @@ function renderSummary() {
         <tr>
           <th>Question</th>
           <th>Selected</th>
-          <th>Status</th>
         </tr>
       </thead>
       <tbody>
@@ -179,7 +178,6 @@ function renderSummary() {
           <tr>
             <td>${a.question}</td>
             <td>${a.selected}</td>
-            <td>${a.result}</td>
           </tr>
         `
           )
