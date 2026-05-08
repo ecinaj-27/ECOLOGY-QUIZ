@@ -9,6 +9,7 @@ const listEl = document.getElementById("admin-list");
 const exportBtn = document.getElementById("export-btn");
 
 let loggedIn = false;
+let lastLoadedEntries = [];
 
 function authHeaders() {
   return { "x-admin-auth": "true" };
@@ -58,17 +59,58 @@ async function loadEntriesFromFirebase(query = "") {
   return entries.filter((r) => String(r.studentName || "").toLowerCase().includes(q));
 }
 
-async function downloadCsvForDate(date) {
-  const endpoint =
+function csvEscape(value) {
+  const text = String(value ?? "");
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function buildCsvFromEntries(entries) {
+  const header = [
+    "studentName",
+    "studentEmail",
+    "studentSection",
+    "score",
+    "completedAt",
+    "question",
+    "selected",
+    "correct",
+    "result"
+  ];
+  const lines = [header.join(",")];
+  entries.forEach((entry) => {
+    const answers = Array.isArray(entry.answers) ? entry.answers : [];
+    answers.forEach((answer) => {
+      lines.push(
+        [
+          entry.studentName,
+          entry.studentEmail,
+          entry.studentSection,
+          entry.score,
+          entry.completedAt,
+          answer.question,
+          answer.selected,
+          answer.correct,
+          answer.result
+        ]
+          .map(csvEscape)
+          .join(",")
+      );
+    });
+  });
+  return lines.join("\n");
+}
+
+function downloadCsvForDate(date) {
+  const rows =
     date && date !== "Unknown Date"
-      ? `/api/results/export.csv?date=${encodeURIComponent(date)}`
-      : "/api/results/export.csv";
-  const response = await fetch(endpoint, { headers: authHeaders() });
-  if (!response.ok) {
-    alert("Export failed.");
+      ? lastLoadedEntries.filter((entry) => extractDate(entry.completedAt) === date)
+      : lastLoadedEntries;
+  if (!rows.length) {
+    alert("No results available to export.");
     return;
   }
-  const blob = await response.blob();
+  const csv = buildCsvFromEntries(rows);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -151,6 +193,7 @@ async function loadEntries(query = "") {
   try {
     const firebaseEntries = await loadEntriesFromFirebase(query);
     if (firebaseEntries) {
+      lastLoadedEntries = firebaseEntries;
       renderEntries(firebaseEntries);
       return;
     }
@@ -171,6 +214,7 @@ async function loadEntries(query = "") {
     return;
   }
   const data = await response.json();
+  lastLoadedEntries = Array.isArray(data) ? data : [];
   renderEntries(data);
 }
 
